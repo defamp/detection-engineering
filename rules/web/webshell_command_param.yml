@@ -1,0 +1,30 @@
+title: Web Shell Command Execution Parameter
+id: 123a0ef5-028c-49eb-b8f0-15a33b2a726d
+status: experimental
+description: |
+  A request to a server-side script with a parameter named cmd, exec,
+  command or c whose value starts with a typical recon or download command
+  (whoami, id, uname, cat, wget, curl, nc, bash, powershell, ...). This is
+  how simple web shells are driven after an upload or RCE.
+  Evasion: custom parameter names or POST-driven shells are not covered.
+author: defamp
+date: 2026-09-28
+logsource:
+  category: webserver
+detection:
+  selection_script:
+    cs-uri-stem|endswith:
+      - '.php'
+      - '.jsp'
+      - '.jspx'
+      - '.asp'
+      - '.aspx'
+  selection_command:
+    cs-uri-query|re|i: '(^|&)(cmd|exec|command|c)=(\+|%20)*(whoami|id|uname|ls|dir|cat|type|wget|curl|nc|ncat|bash|sh|powershell|net(\+|%20)user)(&|$|\+|%20|%3b|;|%7c|\|)'
+  condition: all of selection_*
+falsepositives:
+  - Legitimate admin tools that accept a "cmd" parameter with these words
+level: high
+tags:
+  - attack.persistence
+  - attack.t1505.003

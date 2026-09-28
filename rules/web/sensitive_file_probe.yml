@@ -1,0 +1,34 @@
+title: Probe For Sensitive Files
+id: 729f553f-1862-404b-9def-2f2cc03d138d
+status: experimental
+description: |
+  Requests for files that should never be served: environment files,
+  git metadata, credential stores and database dumps. Scanners request
+  these constantly, so a 404 is routine; a 200 response means the file is
+  exposed and should be treated as an incident.
+author: defamp
+date: 2026-09-28
+logsource:
+  category: webserver
+detection:
+  selection:
+    cs-uri-stem|endswith:
+      - '/.env'
+      - '/.git/config'
+      - '/.git/HEAD'
+      - '/.htpasswd'
+      - '/.aws/credentials'
+      - '/wp-config.php.bak'
+      - '/wp-config.php~'
+      - '/.DS_Store'
+      - '/id_rsa'
+      - '/backup.sql'
+      - '/db.sql'
+      - '/dump.sql'
+  condition: selection
+falsepositives:
+  - Your own vulnerability scanning
+level: medium
+tags:
+  - attack.reconnaissance
+  - attack.t1595.003

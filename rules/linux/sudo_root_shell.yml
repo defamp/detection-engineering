@@ -1,0 +1,28 @@
+title: Interactive Root Shell Via Sudo
+id: 08241d00-2008-4966-a78b-161e14556225
+status: experimental
+description: |
+  sudo was used to open an interactive root shell (sudo bash, sudo -i,
+  sudo su -) rather than to run a specific command. A shell leaves no
+  per-command sudo log afterwards, so what follows is invisible here.
+  Running a script through a shell (COMMAND=/bin/bash /opt/x.sh) is not
+  matched: only a bare shell, optionally with -i/-l, or su.
+author: defamp
+date: 2026-09-28
+logsource:
+  product: linux
+  service: auth
+detection:
+  selection_shell:
+    program: sudo
+    message|re: 'COMMAND=(/usr)?/bin/(ba|z|da|k|c|tc|fi)?sh( -[il]+)?$'
+  selection_su:
+    program: sudo
+    message|re: 'COMMAND=(/usr)?/bin/su( -| -l)?( root)?$'
+  condition: 1 of selection_*
+falsepositives:
+  - Administrators who routinely work in a root shell; tune per team
+level: medium
+tags:
+  - attack.privilege-escalation
+  - attack.t1548.003

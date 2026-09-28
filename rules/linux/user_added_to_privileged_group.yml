@@ -1,0 +1,29 @@
+title: User Added To Privileged Group
+id: a4ccd24c-5b7e-4405-aa55-1b30b9bb6164
+status: experimental
+description: |
+  A user was added to a group that grants root-equivalent rights (sudo,
+  wheel, admin, adm, root) via usermod or gpasswd. Common after an attacker
+  creates or takes over an account and wants to keep root access.
+  Only these two tools are covered; editing /etc/group directly needs a
+  file-integrity or auditd rule.
+author: defamp
+date: 2026-09-28
+logsource:
+  product: linux
+  service: auth
+detection:
+  selection_usermod:
+    program: usermod
+    message|re: "^add '[^']+' to (shadow )?group '(sudo|wheel|admin|adm|root)'$"
+  selection_gpasswd:
+    program: gpasswd
+    message|re: '^user \S+ added by \S+ to group (sudo|wheel|admin|adm|root)$'
+  condition: 1 of selection_*
+falsepositives:
+  - Onboarding a new administrator
+level: high
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1098

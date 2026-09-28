@@ -1,0 +1,25 @@
+title: User Crontab Modified
+id: 37034c40-a6d2-4e2e-9304-68f8e312d87a
+status: experimental
+description: |
+  A crontab was replaced or an edit session was saved. Cron jobs are a
+  classic persistence mechanism: a reverse shell or downloader scheduled to
+  run every few minutes survives reboots. Listing a crontab (LIST) is not
+  matched.
+author: defamp
+date: 2026-09-28
+logsource:
+  product: linux
+  service: cron
+detection:
+  selection:
+    program: crontab
+    message|re: '^\(\S+\) (REPLACE|END EDIT) \(\S+\)$'
+  condition: selection
+falsepositives:
+  - Legitimate scheduling changes by administrators or deployment tooling
+level: medium
+tags:
+  - attack.persistence
+  - attack.execution
+  - attack.t1053.003

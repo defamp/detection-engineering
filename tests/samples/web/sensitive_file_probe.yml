@@ -1,0 +1,16 @@
+cases:
+  - description: .env probe
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /.env, cs-uri-query: "", sc-status: 404}
+  - description: exposed git config
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /app/.git/config, cs-uri-query: "", sc-status: 200}
+  - description: database dump
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /db.sql, cs-uri-query: "", sc-status: 200}
+  - description: file that only resembles a sensitive name
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /docs/env-setup.html, cs-uri-query: "", sc-status: 200}
+  - description: normal page
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /index.php, cs-uri-query: "", sc-status: 200}

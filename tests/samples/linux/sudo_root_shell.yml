@@ -1,0 +1,16 @@
+cases:
+  - description: sudo bash
+    expect: match
+    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/bin/bash"}
+  - description: sudo -i (logged as a login shell)
+    expect: match
+    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash -l"}
+  - description: sudo su -
+    expect: match
+    event: {program: sudo, message: "   bob : TTY=pts/1 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/su -"}
+  - description: running a specific command
+    expect: no_match
+    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/apt update"}
+  - description: running a script through bash
+    expect: no_match
+    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash /opt/scripts/backup.sh"}

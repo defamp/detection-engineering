@@ -1,0 +1,27 @@
+title: SSH Brute Force From Single Source
+id: ab75196d-eee6-4bdb-a4fb-a03d843d64ab
+status: experimental
+description: |
+  Five or more failed SSH passwords from the same source IP within one
+  minute. A human mistyping a password rarely fails five times in a minute;
+  automated guessing (hydra, medusa, botnets) easily does.
+  Evasion: an attacker who slows down below 5/min, or rotates source IPs,
+  stays under this threshold; pair it with the spraying rule and long-window
+  baselining.
+author: defamp
+date: 2026-09-28
+correlation:
+  type: event_count
+  rules:
+    - ssh_failed_password
+  group-by:
+    - src_ip
+  timespan: 1m
+  condition:
+    gte: 5
+falsepositives:
+  - Misconfigured automation retrying with a stale password
+level: high
+tags:
+  - attack.credential-access
+  - attack.t1110.001

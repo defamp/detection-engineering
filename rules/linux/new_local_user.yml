@@ -1,0 +1,25 @@
+title: New Local User Account Created
+id: 3ae0258e-2232-4ed1-9245-c93053afd304
+status: experimental
+description: |
+  useradd created a local account. Attackers add accounts for persistent
+  access that survives password resets of existing users. On servers where
+  accounts come from a central directory, any local account creation is
+  unusual.
+author: defamp
+date: 2026-09-28
+logsource:
+  product: linux
+  service: auth
+detection:
+  selection:
+    program: useradd
+    message|startswith: 'new user: '
+  condition: selection
+falsepositives:
+  - Legitimate administration or configuration management (Ansible, Puppet)
+  - Package installs that create service accounts
+level: medium
+tags:
+  - attack.persistence
+  - attack.t1136.001

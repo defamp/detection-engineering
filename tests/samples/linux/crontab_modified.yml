@@ -1,0 +1,13 @@
+cases:
+  - description: crontab replaced (crontab file or crontab -e save)
+    expect: match
+    event: {program: crontab, message: "(bob) REPLACE (bob)"}
+  - description: root edit session saved
+    expect: match
+    event: {program: crontab, message: "(root) END EDIT (root)"}
+  - description: crontab listed
+    expect: no_match
+    event: {program: crontab, message: "(bob) LIST (bob)"}
+  - description: cron daemon running a job
+    expect: no_match
+    event: {program: CRON, message: "(root) CMD (run-parts /etc/cron.hourly)"}

@@ -1,0 +1,40 @@
+title: Path Traversal Attempt
+id: c6dcd158-1c71-4f31-a975-031f354767e3
+status: experimental
+description: |
+  Directory traversal sequences (../ and its URL-encoded, double-encoded and
+  backslash variants) or well-known target files in the URL. Used to read
+  files outside the web root, e.g. /etc/passwd or application config.
+author: defamp
+date: 2026-09-28
+logsource:
+  category: webserver
+detection:
+  selection_stem:
+    cs-uri-stem|contains:
+      - '../'
+      - '..%2f'
+      - '%2e%2e/'
+      - '%2e%2e%2f'
+      - '..\'
+      - '..%5c'
+      - '%252e%252e%252f'
+  selection_query:
+    cs-uri-query|contains:
+      - '../'
+      - '..%2f'
+      - '%2e%2e/'
+      - '%2e%2e%2f'
+      - '..\'
+      - '..%5c'
+      - '%252e%252e%252f'
+      - '/etc/passwd'
+      - '%2fetc%2fpasswd'
+      - 'win.ini'
+  condition: 1 of selection_*
+falsepositives:
+  - Applications that legitimately pass relative paths in parameters
+level: medium
+tags:
+  - attack.initial-access
+  - attack.t1190

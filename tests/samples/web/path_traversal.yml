@@ -1,0 +1,19 @@
+cases:
+  - description: plain traversal to /etc/passwd
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /download.php, cs-uri-query: "file=../../../../etc/passwd", sc-status: 200}
+  - description: URL-encoded traversal
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /download.php, cs-uri-query: "file=%2e%2e%2f%2e%2e%2fconfig.php", sc-status: 200}
+  - description: double-encoded traversal in the path
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: "/static/%252e%252e%252f%252e%252e%252fetc/shadow", cs-uri-query: "", sc-status: 404}
+  - description: Windows-style traversal
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /view, cs-uri-query: "page=..%5c..%5cwindows%5cwin.ini", sc-status: 400}
+  - description: normal file download
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /download.php, cs-uri-query: "file=report-2026.pdf", sc-status: 200}
+  - description: version string with dots
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /assets/app.1.2.3.js, cs-uri-query: "v=1.2.3", sc-status: 200}

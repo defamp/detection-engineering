@@ -1,0 +1,26 @@
+title: SQL Injection Attempt In Query String
+id: a8796f40-4162-475d-8059-586ce4560b64
+status: experimental
+description: |
+  Common SQL injection payloads in the URL query string: UNION SELECT,
+  tautologies such as ' OR 1=1, time-based probes (SLEEP, BENCHMARK) and
+  references to information_schema. Access logs keep the query URL-encoded,
+  so spaces may appear as +, %20 or inline comments and quotes as %27.
+  Evasion: POST bodies are not in access logs, and heavier encoding
+  (double encoding, unusual whitespace) can slip past; a WAF or app-level
+  logging sees more.
+author: defamp
+date: 2026-09-28
+logsource:
+  category: webserver
+detection:
+  selection:
+    cs-uri-query|re|i: "(union(\\s|\\+|%20|/\\*.*?\\*/)+(all(\\s|\\+|%20)+)?select|(%27|')(\\s|\\+|%20)*(or|and)(\\s|\\+|%20)+(%27|')?\\d+(%27|')?(\\s|\\+|%20)*(=|%3d)|sleep(\\s|\\+|%20)*(\\(|%28)(\\s|\\+|%20)*\\d|benchmark(\\s|\\+|%20)*(\\(|%28)|information_schema)"
+  condition: selection
+falsepositives:
+  - Search pages where users type SQL-like text
+  - Security scanners run by your own team
+level: high
+tags:
+  - attack.initial-access
+  - attack.t1190

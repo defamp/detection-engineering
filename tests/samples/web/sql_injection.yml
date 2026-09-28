@@ -1,0 +1,19 @@
+cases:
+  - description: UNION SELECT with + as space
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /product.php, cs-uri-query: "id=1+UNION+SELECT+username,password+FROM+users", sc-status: 200}
+  - description: URL-encoded tautology
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /login.php, cs-uri-query: "user=admin%27%20OR%201%3D1--", sc-status: 200}
+  - description: time-based probe
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /item, cs-uri-query: "id=5%20AND%20SLEEP(5)", sc-status: 200}
+  - description: inline-comment evasion of spaces
+    expect: match
+    event: {cs-method: GET, cs-uri-stem: /item, cs-uri-query: "id=-1/**/union/**/select/**/1,2,3", sc-status: 200}
+  - description: normal search containing the words union and select
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /search, cs-uri-query: "q=credit+union+account+selection", sc-status: 200}
+  - description: normal numeric parameter
+    expect: no_match
+    event: {cs-method: GET, cs-uri-stem: /product.php, cs-uri-query: "id=42&sort=price", sc-status: 200}

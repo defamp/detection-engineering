@@ -1,0 +1,10 @@
+cases:
+  - description: useradd creates an account
+    expect: match
+    event: {program: useradd, message: "new user: name=backdoor, UID=1001, GID=1001, home=/home/backdoor, shell=/bin/bash, from=/dev/pts/0"}
+  - description: useradd creating the matching group line only
+    expect: no_match
+    event: {program: useradd, message: "new group: name=backdoor, GID=1001"}
+  - description: unrelated passwd change
+    expect: no_match
+    event: {program: passwd, message: "pam_unix(passwd:chauthtok): password changed for alice"}
