@@ -1,4 +1,5 @@
 # Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100160
 cases:
   - description: UNION SELECT with + as space
     expect: match

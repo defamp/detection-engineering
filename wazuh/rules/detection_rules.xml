@@ -125,4 +125,47 @@
     </mitre>
   </rule>
 
+  <!-- Web rules. The web-accesslog decoder's final built-in rule depends on
+       the request (seen in the CI discovery step on 4.9.2):
+       31100 = access log grouped, 31101 = 4xx, 31106 = web attack returned
+       200, 31108 = ignored simple query. Our rules hang off all four; a
+       request that ends on another built-in rule is not covered.
+       Patterns are anchored to the request line ("METHOD url) so the
+       user agent or referer can't trigger them. -->
+  <rule id="100160" level="10">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\?[^ "]*(union(\s|\+|%20|/\*.*?\*/)+(all(\s|\+|%20)+)?select|(%27|')(\s|\+|%20)*(or|and)(\s|\+|%20)+(%27|')?\d+(%27|')?(\s|\+|%20)*(=|%3d)|sleep(\s|\+|%20)*(\(|%28)(\s|\+|%20)*\d|benchmark(\s|\+|%20)*(\(|%28)|information_schema)</regex>
+    <description>SQL injection attempt in query string (Sigma: sql_injection)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+  </rule>
+
+  <rule id="100161" level="7">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "]*(\.\./|\.\.%2f|%2e%2e/|%2e%2e%2f|\.\.\\|\.\.%5c|%252e%252e%252f|/etc/passwd|%2fetc%2fpasswd|win\.ini)</regex>
+    <description>Path traversal attempt (Sigma: path_traversal)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+  </rule>
+
+  <rule id="100162" level="7">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*/(\.env|\.git/config|\.git/HEAD|\.htpasswd|\.aws/credentials|wp-config\.php\.bak|wp-config\.php~|\.DS_Store|id_rsa|backup\.sql|db\.sql|dump\.sql)[ ?]</regex>
+    <description>Probe for sensitive files (Sigma: sensitive_file_probe)</description>
+    <mitre>
+      <id>T1595.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100163" level="10">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\.(php|jspx?|aspx?)\?([^ "]*&amp;)?(cmd|exec|command|c)=(\+|%20)*(whoami|id|uname|ls|dir|cat|type|wget|curl|nc|ncat|bash|sh|powershell|net(\+|%20)user)(&amp;|\+|%20|%3b|;|%7c|\||[ "])</regex>
+    <description>Web shell command execution parameter (Sigma: webshell_command_param)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+
 </group>

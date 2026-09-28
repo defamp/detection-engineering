@@ -1,4 +1,5 @@
 # Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100163
 cases:
   - description: whoami through cmd parameter
     expect: match
