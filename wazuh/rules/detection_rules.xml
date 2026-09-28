@@ -131,7 +131,8 @@
        200, 31108 = ignored simple query. Our rules hang off all four; a
        request that ends on another built-in rule is not covered.
        Patterns are anchored to the request line ("METHOD url) so the
-       user agent or referer can't trigger them. -->
+       user agent or referer can't trigger them. An ampersand is written
+       as \x26: Wazuh's XML reader does not decode the &amp; entity. -->
   <rule id="100160" level="10">
     <if_sid>31100, 31101, 31106, 31108</if_sid>
     <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\?[^ "]*(union(\s|\+|%20|/\*.*?\*/)+(all(\s|\+|%20)+)?select|(%27|')(\s|\+|%20)*(or|and)(\s|\+|%20)+(%27|')?\d+(%27|')?(\s|\+|%20)*(=|%3d)|sleep(\s|\+|%20)*(\(|%28)(\s|\+|%20)*\d|benchmark(\s|\+|%20)*(\(|%28)|information_schema)</regex>
@@ -161,7 +162,7 @@
 
   <rule id="100163" level="10">
     <if_sid>31100, 31101, 31106, 31108</if_sid>
-    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\.(php|jspx?|aspx?)\?([^ "]*&amp;)?(cmd|exec|command|c)=(\+|%20)*(whoami|id|uname|ls|dir|cat|type|wget|curl|nc|ncat|bash|sh|powershell|net(\+|%20)user)(&amp;|\+|%20|%3b|;|%7c|\||[ "])</regex>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\.(php|jspx?|aspx?)\?([^ "]*\x26)?(cmd|exec|command|c)=(\+|%20)*(whoami|id|uname|ls|dir|cat|type|wget|curl|nc|ncat|bash|sh|powershell|net(\+|%20)user)(\x26|\+|%20|%3b|;|%7c|\||[ "])</regex>
     <description>Web shell command execution parameter (Sigma: webshell_command_param)</description>
     <mitre>
       <id>T1505.003</id>
