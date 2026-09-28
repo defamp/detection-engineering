@@ -15,7 +15,7 @@ Starting wazuh-logtest v4.9.2
 Type one log per line
 
 **Phase 1: Completed pre-decoding.
-\tfull event: 'Sep 28 10:00:00 web1 sshd[811]: Failed password for root from 203.0.113.7 port 1 ssh2'
+\tfull event: 'Sep 28 10:00:00 web1 sshd[811]: Failed password for root from 203.0.113.7'
 \ttimestamp: 'Sep 28 10:00:00'
 
 **Phase 2: Completed decoding.
