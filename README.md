@@ -5,6 +5,7 @@
 > must ignore.
 
 [![ci](https://github.com/defamp/detection-engineering/actions/workflows/ci.yml/badge.svg)](https://github.com/defamp/detection-engineering/actions/workflows/ci.yml)
+[![wazuh](https://github.com/defamp/detection-engineering/actions/workflows/wazuh.yml/badge.svg)](https://github.com/defamp/detection-engineering/actions/workflows/wazuh.yml)
 
 ## Why "as code"
 
@@ -51,6 +52,8 @@ detlab/engine.py          evaluates parsed Sigma rules and correlations on event
 detlab/parsers.py         raw syslog / journalctl / access-log lines -> events
 detlab/scan.py            run all rules against a log file
 tests/                    sample, engine and metadata tests
+wazuh/rules, wazuh/decoders   Wazuh rules and decoder for the same detections
+wazuh/run_logtest.py      runs the samples through wazuh-logtest (CI job "wazuh")
 ```
 
 ## Event fields
@@ -72,6 +75,63 @@ on top of the `ssh_failed_password` base rule:
 - **Brute force**: `event_count` ≥ 5 per `src_ip` within 1 minute
 - **Password spraying**: `value_count` of distinct `user` ≥ 5 per `src_ip`
   within 10 minutes
+
+## Wazuh rules
+
+`wazuh/` contains Wazuh rules and a decoder for the same detections, tested in
+a separate CI job (`.github/workflows/wazuh.yml`) against a real
+`wazuh/wazuh-manager:4.9.2` container: every raw sample line goes through
+`wazuh-logtest`, and the job asserts the expected rule fires on attack
+samples and not on benign ones.
+
+| Sigma rule | Wazuh rule(s) | Built-in parent (from the discovery step) |
+|---|---|---|
+| ssh_failed_password | 100110 existing account, 100114 non-existent | 5760 / 5716, 5710 |
+| ssh_bruteforce | 100111, 100115 | correlates on 100110 / 100114 |
+| ssh_password_spraying | 100112 (`different_user`), 100113 (`different_srcuser`) | correlates on 100110 / 100114 |
+| new_local_user | 100120 | 5902 |
+| user_added_to_privileged_group | 100131 | custom `usermod` decoder + 100130, gpasswd 2961 |
+| sudo_root_shell | 100140 | 5402 / 5403 |
+| crontab_modified | 100150 | 2832 / 2830 |
+| sql_injection, path_traversal, sensitive_file_probe, webshell_command_param | 100160 - 100163 | 31100 / 31101 / 31106 / 31108 |
+
+How the rules were built: a discovery step (`run_logtest.py --discover`)
+prints which built-in decoder and rule each sample reaches, and every custom
+rule hangs off parents observed there, not assumed ones. Things learned the
+hard way, now covered by tests:
+
+- In 4.9.2, "Failed password" for an existing user is rule 5760, not 5716.
+- `usermod` has no built-in decoder, so its group changes reached no rule.
+- The sshd decoder stores existing users in `dstuser` and non-existent ones in
+  `srcuser`. Which correlation option counts distinct users was settled by an
+  experiment in CI: `different_user` works for `dstuser`; `different_field`
+  did not fire; `different_srcuser` also fires when the field is absent, so it
+  is only used on events that always carry `srcuser`.
+- Wazuh's XML reader does not decode `&amp;`; write `\x26` in patterns.
+
+### Skips and known gaps
+
+These are listed in the samples and printed by every run; nothing is hidden.
+
+- `wazuh_skip` (2 benign cases): "failures spread over N minutes". Wazuh
+  correlates on analysis time and `wazuh-logtest` processes all lines at once,
+  so time gaps can't be reproduced there. The Python engine tests them.
+- `wazuh_gap` (1 case): a spray of 4 existing + 1 non-existent account. The
+  two account types are counted separately, so neither reaches 5. The job
+  asserts Wazuh still misses it, so it will flag if that ever changes.
+- Web requests whose final built-in rule is not one of 31100/31101/31106/31108
+  are not covered.
+
+### Running the Wazuh tests locally
+
+```bash
+docker run -d --name wazuh wazuh/wazuh-manager:4.9.2
+python wazuh/run_logtest.py --wait-only
+docker cp wazuh/rules/detection_rules.xml wazuh:/var/ossec/etc/rules/
+docker cp wazuh/decoders/detection_decoders.xml wazuh:/var/ossec/etc/decoders/
+docker exec wazuh /var/ossec/bin/wazuh-control restart
+python wazuh/run_logtest.py            # add --discover to see built-in matches
+```
 
 ## How the test engine works
 
@@ -127,8 +187,8 @@ python -m detlab.coverage    # regenerate the coverage table
 
 ## Roadmap
 
-- Wazuh rules and decoders for the same detections, tested with `wazuh-logtest`
 - Converted Splunk / Elastic queries generated in CI
+- Wazuh coverage for more web-accesslog end states
 
 ## License
 
