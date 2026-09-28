@@ -1,0 +1,45 @@
+name: wazuh
+
+on:
+  push:
+  pull_request:
+
+env:
+  WAZUH_IMAGE: wazuh/wazuh-manager:4.9.2
+
+jobs:
+  logtest:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Authenticated pulls avoid Docker Hub's anonymous rate limit (HTTP 429).
+      # Skipped when the secrets are not configured.
+      - name: Log in to Docker Hub
+        if: env.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Start Wazuh manager with the rules
+        run: |
+          docker run -d --name wazuh \
+            -v "$PWD/wazuh/rules/detection_rules.xml:/var/ossec/etc/rules/detection_rules.xml:ro" \
+            "$WAZUH_IMAGE"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+
+      - name: Test rules with wazuh-logtest
+        run: python wazuh/run_logtest.py --container wazuh
+
+      - name: Wazuh logs on failure
+        if: failure()
+        run: |
+          docker logs wazuh 2>&1 | tail -80
+          docker exec wazuh tail -80 /var/ossec/logs/ossec.log || true

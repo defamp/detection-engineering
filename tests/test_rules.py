@@ -67,3 +67,13 @@ def test_sample(rule_path, case):
         assert ("event" in case) != ("raw" in case), "rule cases need an event or a raw line"
         event = case.get("event") or parse_line(case["raw"])
         assert rule_matches(rule, event) == (case["expect"] == "match")
+
+
+def test_wazuh_samples_are_raw_lines():
+    """Cases tested in Wazuh must be raw lines: wazuh-logtest decodes them itself."""
+    for rule_path in sorted(RULES):
+        data = yaml.safe_load(sample_file(rule_path).read_text()) or {}
+        if "wazuh_rule" in data:
+            assert isinstance(data["wazuh_rule"], int), rule_path
+            for case in data["cases"]:
+                assert "raw" in case, f"{rule_path}: {case.get('description')} has no raw line"

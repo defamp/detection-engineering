@@ -1,19 +1,20 @@
+wazuh_rule: 100140
 cases:
   - description: sudo bash
     expect: match
-    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/bin/bash"}
+    raw: "Sep 28 11:00:00 web1 sudo:      bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/bin/bash"
   - description: sudo -i (logged as a login shell)
     expect: match
-    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash -l"}
+    raw: "Sep 28 11:00:01 web1 sudo:      bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash -l"
   - description: sudo su -
     expect: match
-    event: {program: sudo, message: "   bob : TTY=pts/1 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/su -"}
+    raw: "Sep 28 11:00:02 web1 sudo:      bob : TTY=pts/1 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/su -"
   - description: running a specific command
     expect: no_match
-    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/apt update"}
+    raw: "Sep 28 11:00:03 web1 sudo:      bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/apt update"
   - description: running a script through bash
     expect: no_match
-    event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash /opt/scripts/backup.sh"}
+    raw: "Sep 28 11:00:04 web1 sudo:      bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash /opt/scripts/backup.sh"
 
   # Real journald lines from a Kali workstation (`journalctl -o short-iso`),
   # hostname and username anonymised. The `sudo su` is the admin's own
