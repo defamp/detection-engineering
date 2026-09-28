@@ -72,9 +72,13 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--container", default="wazuh")
     p.add_argument("--ready-timeout", type=int, default=300)
+    p.add_argument("--wait-only", action="store_true", help="only wait until logtest answers")
     args = p.parse_args()
 
     wait_ready(args.container, time.time() + args.ready_timeout)
+    if args.wait_only:
+        print("wazuh-logtest is ready")
+        return 0
 
     total = failed = 0
     for path in sorted(SAMPLES.rglob("*.yml")):

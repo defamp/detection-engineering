@@ -24,16 +24,32 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Start Wazuh manager with the rules
-        run: |
-          docker run -d --name wazuh \
-            -v "$PWD/wazuh/rules/detection_rules.xml:/var/ossec/etc/rules/detection_rules.xml:ro" \
-            "$WAZUH_IMAGE"
+      # Start clean: mounting files into /var/ossec/etc makes the image's init
+      # script skip creating the default config (no ossec.conf, no manager).
+      - name: Start Wazuh manager
+        run: docker run -d --name wazuh "$WAZUH_IMAGE"
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install pyyaml
+
+      - name: Wait for the manager
+        run: python wazuh/run_logtest.py --container wazuh --wait-only
+
+      - name: Install the rules and restart
+        run: |
+          docker cp wazuh/rules/detection_rules.xml wazuh:/var/ossec/etc/rules/detection_rules.xml
+          docker exec wazuh chown root:wazuh /var/ossec/etc/rules/detection_rules.xml
+          docker exec wazuh chmod 660 /var/ossec/etc/rules/detection_rules.xml
+          docker exec wazuh /var/ossec/bin/wazuh-control restart
+
+      - name: Fail on rule loading errors
+        run: |
+          if docker exec wazuh grep -iE "error|critical" /var/ossec/logs/ossec.log | grep -i "rules"; then
+            echo "::error::Wazuh reported errors while loading rules"
+            exit 1
+          fi
 
       - name: Test rules with wazuh-logtest
         run: python wazuh/run_logtest.py --container wazuh
