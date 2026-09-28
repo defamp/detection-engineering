@@ -37,16 +37,6 @@ jobs:
       - name: Wait for the manager
         run: python wazuh/run_logtest.py --container wazuh --wait-only
 
-      # Temporary experiment (evidence for the spraying rule); removed once decided.
-      - name: Correlation option names accepted by analysisd
-        run: |
-          opts=$(docker exec wazuh sh -c 'strings /var/ossec/bin/wazuh-analysisd | grep -xE "(same|different|not_same)_[a-z_]+" | sort -u | tr "\n" " "')
-          echo "$opts"
-          echo "::notice title=analysisd options::$opts"
-      - name: Spraying experiment
-        continue-on-error: true
-        run: python wazuh/experiment_spraying.py
-
       - name: Install the rules and restart
         run: |
           docker cp wazuh/rules/detection_rules.xml wazuh:/var/ossec/etc/rules/detection_rules.xml
@@ -68,21 +58,6 @@ jobs:
       # Wazuh rule yet. Used to pick the right parent (if_sid) for new rules.
       - name: Discover built-in matches
         run: python wazuh/run_logtest.py --container wazuh --discover
-
-      # Informational: correlation options the shipped ruleset actually uses,
-      # with an example rule for each, to base new rules on real usage.
-      - name: Correlation options in the built-in ruleset
-        run: |
-          {
-            docker exec wazuh sh -c 'grep -rhoE "<(same|different|not_same)_[a-z_]+" /var/ossec/ruleset/rules | sort | uniq -c'
-            for opt in different_srcuser different_user different_field same_user; do
-              echo "--- example: $opt"
-              docker exec wazuh sh -c "grep -rl '<$opt' /var/ossec/ruleset/rules | head -1 | xargs -r grep -B8 -A3 '<$opt' | head -30" || true
-            done
-          } > options.txt
-          cat options.txt
-          # also as an annotation, readable through the checks API
-          echo "::notice title=correlation options::$(sed 's/%/%25/g' options.txt | sed ':a;N;$!ba;s/\n/%0A/g')"
 
       - name: Test rules with wazuh-logtest
         run: python wazuh/run_logtest.py --container wazuh
