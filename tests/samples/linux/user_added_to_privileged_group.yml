@@ -1,16 +1,17 @@
+# Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
 cases:
   - description: usermod -aG sudo
     expect: match
-    event: {program: usermod, message: "add 'backdoor' to group 'sudo'"}
+    raw: 'Sep 28 12:00:00 web1 usermod[3001]: add ''backdoor'' to group ''sudo'''
   - description: usermod shadow group entry for wheel
     expect: match
-    event: {program: usermod, message: "add 'backdoor' to shadow group 'wheel'"}
+    raw: 'Sep 28 12:00:00 web1 usermod[3001]: add ''backdoor'' to shadow group ''wheel'''
   - description: gpasswd -a user sudo
     expect: match
-    event: {program: gpasswd, message: "user backdoor added by root to group sudo"}
+    raw: 'Sep 28 12:00:00 web1 gpasswd[3002]: user backdoor added by root to group sudo'
   - description: added to an unprivileged group
     expect: no_match
-    event: {program: usermod, message: "add 'alice' to group 'docker-readers'"}
+    raw: 'Sep 28 12:00:00 web1 usermod[3001]: add ''alice'' to group ''docker-readers'''
   - description: group name that only starts with sudo
     expect: no_match
-    event: {program: usermod, message: "add 'alice' to group 'sudoers-audit'"}
+    raw: 'Sep 28 12:00:00 web1 usermod[3001]: add ''alice'' to group ''sudoers-audit'''

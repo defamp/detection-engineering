@@ -51,6 +51,11 @@ jobs:
             exit 1
           fi
 
+      # Informational: which built-in decoder/rule handles samples that have no
+      # Wazuh rule yet. Used to pick the right parent (if_sid) for new rules.
+      - name: Discover built-in matches
+        run: python wazuh/run_logtest.py --container wazuh --discover
+
       - name: Test rules with wazuh-logtest
         run: python wazuh/run_logtest.py --container wazuh
 

@@ -48,6 +48,35 @@ def fired_rules(output: str) -> list[set[str]]:
     return out
 
 
+DECODER = re.compile(r"^\s*name: '([^']+)'", re.MULTILINE)
+DESCRIPTION = re.compile(r"^\s*description: '([^']*)'", re.MULTILINE)
+
+
+def discover(container: str) -> None:
+    """Print decoder and built-in rule for every raw line of sample files that
+    have no `wazuh_rule` yet, to find the right parent (if_sid) for a new rule."""
+    for path in sorted(SAMPLES.rglob("*.yml")):
+        data = yaml.safe_load(path.read_text()) or {}
+        if "wazuh_rule" in data:
+            continue
+        print(f"== {path.relative_to(SAMPLES)}")
+        for case in data.get("cases", []):
+            raw = case.get("raw")
+            if raw is None:
+                continue
+            lines = [raw] if isinstance(raw, str) else list(raw)
+            blocks = logtest(container, lines).split(PHASE1)[1:]
+            for line, block in zip(lines, blocks, strict=False):
+                decoding, _, rules = block.partition("**Phase 3")
+                dec = DECODER.findall(decoding)
+                rid = RULE_ID.findall(rules)
+                desc = DESCRIPTION.findall(rules)
+                print(
+                    f"  [{case['expect']}] decoder={dec[:1]} rule={rid[:1]} {desc[:1]}"
+                    f" <- {line[:90]}"
+                )
+
+
 def wait_ready(container: str, deadline: float) -> None:
     probe = "Sep 28 10:00:00 web1 sshd[1]: Accepted password for probe from 192.0.2.1 port 1 ssh2"
     last = ""
@@ -73,11 +102,15 @@ def main() -> int:
     p.add_argument("--container", default="wazuh")
     p.add_argument("--ready-timeout", type=int, default=300)
     p.add_argument("--wait-only", action="store_true", help="only wait until logtest answers")
+    p.add_argument("--discover", action="store_true", help="print built-in matches, no asserts")
     args = p.parse_args()
 
     wait_ready(args.container, time.time() + args.ready_timeout)
     if args.wait_only:
         print("wazuh-logtest is ready")
+        return 0
+    if args.discover:
+        discover(args.container)
         return 0
 
     total = failed = 0

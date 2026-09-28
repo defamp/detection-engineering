@@ -1,13 +1,14 @@
+# Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
 cases:
   - description: crontab replaced (crontab file or crontab -e save)
     expect: match
-    event: {program: crontab, message: "(bob) REPLACE (bob)"}
+    raw: 'Sep 28 12:00:00 web1 crontab[4102]: (bob) REPLACE (bob)'
   - description: root edit session saved
     expect: match
-    event: {program: crontab, message: "(root) END EDIT (root)"}
+    raw: 'Sep 28 12:00:00 web1 crontab[4102]: (root) END EDIT (root)'
   - description: crontab listed
     expect: no_match
-    event: {program: crontab, message: "(bob) LIST (bob)"}
+    raw: 'Sep 28 12:00:00 web1 crontab[4102]: (bob) LIST (bob)'
   - description: cron daemon running a job
     expect: no_match
-    event: {program: CRON, message: "(root) CMD (run-parts /etc/cron.hourly)"}
+    raw: 'Sep 28 12:00:00 web1 CRON[5000]: (root) CMD (run-parts /etc/cron.hourly)'
