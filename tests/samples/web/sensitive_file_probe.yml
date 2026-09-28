@@ -1,16 +1,18 @@
+# Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100162
 cases:
   - description: .env probe
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /.env, cs-uri-query: "", sc-status: 404}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:00 +0000] "GET /.env HTTP/1.1" 404 512 "-" "Mozilla/5.0"'
   - description: exposed git config
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /app/.git/config, cs-uri-query: "", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:01 +0000] "GET /app/.git/config HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: database dump
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /db.sql, cs-uri-query: "", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:02 +0000] "GET /db.sql HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: file that only resembles a sensitive name
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /docs/env-setup.html, cs-uri-query: "", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:03 +0000] "GET /docs/env-setup.html HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: normal page
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /index.php, cs-uri-query: "", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:04 +0000] "GET /index.php HTTP/1.1" 200 512 "-" "Mozilla/5.0"'

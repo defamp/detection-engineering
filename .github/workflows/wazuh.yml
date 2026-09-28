@@ -1,0 +1,69 @@
+name: wazuh
+
+on:
+  push:
+  pull_request:
+
+env:
+  WAZUH_IMAGE: wazuh/wazuh-manager:4.9.2
+
+jobs:
+  logtest:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Authenticated pulls avoid Docker Hub's anonymous rate limit (HTTP 429).
+      # Skipped when the secrets are not configured.
+      - name: Log in to Docker Hub
+        if: env.DOCKERHUB_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Start clean: mounting files into /var/ossec/etc makes the image's init
+      # script skip creating the default config (no ossec.conf, no manager).
+      - name: Start Wazuh manager
+        run: docker run -d --name wazuh "$WAZUH_IMAGE"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+
+      - name: Wait for the manager
+        run: python wazuh/run_logtest.py --container wazuh --wait-only
+
+      - name: Install the rules and restart
+        run: |
+          docker cp wazuh/rules/detection_rules.xml wazuh:/var/ossec/etc/rules/detection_rules.xml
+          docker cp wazuh/decoders/detection_decoders.xml wazuh:/var/ossec/etc/decoders/detection_decoders.xml
+          for f in rules/detection_rules.xml decoders/detection_decoders.xml; do
+            docker exec wazuh chown root:wazuh "/var/ossec/etc/$f"
+            docker exec wazuh chmod 660 "/var/ossec/etc/$f"
+          done
+          docker exec wazuh /var/ossec/bin/wazuh-control restart
+
+      - name: Fail on rule loading errors
+        run: |
+          if docker exec wazuh grep -iE "error|critical" /var/ossec/logs/ossec.log | grep -iE "rules|decoder"; then
+            echo "::error::Wazuh reported errors while loading rules or decoders"
+            exit 1
+          fi
+
+      # Informational: which built-in decoder/rule handles samples that have no
+      # Wazuh rule yet. Used to pick the right parent (if_sid) for new rules.
+      - name: Discover built-in matches
+        run: python wazuh/run_logtest.py --container wazuh --discover
+
+      - name: Test rules with wazuh-logtest
+        run: python wazuh/run_logtest.py --container wazuh
+
+      - name: Wazuh logs on failure
+        if: failure()
+        run: |
+          docker logs wazuh 2>&1 | tail -80
+          docker exec wazuh tail -80 /var/ossec/logs/ossec.log || true

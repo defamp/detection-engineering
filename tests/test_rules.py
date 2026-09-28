@@ -67,3 +67,21 @@ def test_sample(rule_path, case):
         assert ("event" in case) != ("raw" in case), "rule cases need an event or a raw line"
         event = case.get("event") or parse_line(case["raw"])
         assert rule_matches(rule, event) == (case["expect"] == "match")
+
+
+def test_wazuh_samples_are_raw_lines():
+    """Cases tested in Wazuh must be raw lines: wazuh-logtest decodes them itself."""
+    for rule_path in sorted(RULES):
+        data = yaml.safe_load(sample_file(rule_path).read_text()) or {}
+        if "wazuh_rule" in data:
+            rules = data["wazuh_rule"]
+            assert all(isinstance(r, int) for r in (rules if isinstance(rules, list) else [rules]))
+            for case in data["cases"]:
+                assert "raw" in case, f"{rule_path}: {case.get('description')} has no raw line"
+                if "wazuh_skip" in case:
+                    # a skip must say why, and must not hide a case that should fire
+                    assert len(str(case["wazuh_skip"])) > 20, "explain the skip"
+                    assert case["expect"] in ("no_match", "no_alert"), "only benign cases may skip"
+                if "wazuh_gap" in case:
+                    assert len(str(case["wazuh_gap"])) > 20, "explain the gap"
+                    assert case["expect"] in ("match", "alert"), "a gap is a missed detection"

@@ -1,19 +1,21 @@
+# Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100161
 cases:
   - description: plain traversal to /etc/passwd
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /download.php, cs-uri-query: "file=../../../../etc/passwd", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:00 +0000] "GET /download.php?file=../../../../etc/passwd HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: URL-encoded traversal
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /download.php, cs-uri-query: "file=%2e%2e%2f%2e%2e%2fconfig.php", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:01 +0000] "GET /download.php?file=%2e%2e%2f%2e%2e%2fconfig.php HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: double-encoded traversal in the path
     expect: match
-    event: {cs-method: GET, cs-uri-stem: "/static/%252e%252e%252f%252e%252e%252fetc/shadow", cs-uri-query: "", sc-status: 404}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:02 +0000] "GET /static/%252e%252e%252f%252e%252e%252fetc/shadow HTTP/1.1" 404 512 "-" "Mozilla/5.0"'
   - description: Windows-style traversal
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /view, cs-uri-query: "page=..%5c..%5cwindows%5cwin.ini", sc-status: 400}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:03 +0000] "GET /view?page=..%5c..%5cwindows%5cwin.ini HTTP/1.1" 400 512 "-" "Mozilla/5.0"'
   - description: normal file download
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /download.php, cs-uri-query: "file=report-2026.pdf", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:04 +0000] "GET /download.php?file=report-2026.pdf HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: version string with dots
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /assets/app.1.2.3.js, cs-uri-query: "v=1.2.3", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:05 +0000] "GET /assets/app.1.2.3.js?v=1.2.3 HTTP/1.1" 200 512 "-" "Mozilla/5.0"'

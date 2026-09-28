@@ -1,0 +1,172 @@
+<!--
+  Wazuh rules for the same detections as the Sigma rules in rules/.
+  Each rule is tested in CI with wazuh-logtest against the raw lines in
+  tests/samples/ (the file names the expected rule in `wazuh_rule`).
+  Custom rules hang off Wazuh's built-in parent rules (if_sid), because a
+  new top-level rule is never reached once a built-in parent has matched.
+-->
+<group name="detection_engineering,">
+
+  <!-- ssh_failed_password. The built-in sshd decoder splits failures in two:
+       existing users -> 5760 (4.9.2) or 5716, username in dstuser;
+       non-existent users -> 5710, username in srcuser.
+       Each kind gets its own base rule so the correlations below can count
+       distinct users with the option that matches its field. -->
+  <rule id="100110" level="5">
+    <if_sid>5760, 5716</if_sid>
+    <match>Failed password for </match>
+    <description>SSH failed password, existing account (Sigma: ssh_failed_password)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>authentication_failed,</group>
+  </rule>
+
+  <rule id="100114" level="5">
+    <if_sid>5710</if_sid>
+    <match>Failed password for invalid user </match>
+    <description>SSH failed password, non-existent account (Sigma: ssh_failed_password)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>authentication_failed,</group>
+  </rule>
+
+  <!-- ssh_password_spraying: 5 distinct users from one source in 10 minutes.
+       Option choice verified in CI (see README): <different_user /> counts
+       distinct dstuser; <different_srcuser /> counts distinct srcuser but
+       also fires when the field is absent, so it is only used on 100114,
+       whose events always carry srcuser. Spraying rules come before brute
+       force: sibling rules are tried in file order. -->
+  <rule id="100112" level="10" frequency="5" timeframe="600">
+    <if_matched_sid>100110</if_matched_sid>
+    <same_srcip />
+    <different_user />
+    <description>SSH password spraying of existing accounts (Sigma: ssh_password_spraying)</description>
+    <mitre>
+      <id>T1110.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100113" level="10" frequency="5" timeframe="600">
+    <if_matched_sid>100114</if_matched_sid>
+    <same_srcip />
+    <different_srcuser />
+    <description>SSH password spraying of non-existent accounts (Sigma: ssh_password_spraying)</description>
+    <mitre>
+      <id>T1110.003</id>
+    </mitre>
+  </rule>
+
+  <!-- ssh_bruteforce: 5 failures from one source in 60 seconds. -->
+  <rule id="100111" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>100110</if_matched_sid>
+    <same_srcip />
+    <description>SSH brute force from a single source (Sigma: ssh_bruteforce)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+  </rule>
+
+  <rule id="100115" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>100114</if_matched_sid>
+    <same_srcip />
+    <description>SSH brute force against non-existent accounts (Sigma: ssh_bruteforce)</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+  </rule>
+
+  <!-- new_local_user. Built-in parent: 5902 = new user added (useradd decoder). -->
+  <rule id="100120" level="8">
+    <if_sid>5902</if_sid>
+    <match>new user: </match>
+    <description>New local user account created (Sigma: new_local_user)</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+  </rule>
+
+  <!-- user_added_to_privileged_group. usermod has no built-in decoder or rule:
+       100130 groups the custom usermod decoder; gpasswd lands on built-in 2961. -->
+  <rule id="100130" level="3">
+    <decoded_as>usermod</decoded_as>
+    <description>usermod messages grouped</description>
+  </rule>
+
+  <rule id="100131" level="10">
+    <if_sid>100130, 2961</if_sid>
+    <regex type="pcre2">to (shadow )?group '?(sudo|wheel|admin|adm|root)'?$</regex>
+    <description>User added to a privileged group (Sigma: user_added_to_privileged_group)</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+  </rule>
+
+  <!-- sudo_root_shell. Built-in parents: 5403 = first time a user runs sudo
+       (fires in every fresh logtest session), 5402 = sudo to root. -->
+  <rule id="100140" level="8">
+    <if_sid>5402, 5403</if_sid>
+    <regex type="pcre2">COMMAND=(/usr)?/bin/(ba|z|da|k|c|tc|fi)?sh( -[il]+)?$|COMMAND=(/usr)?/bin/su( -| -l)?( root)?$</regex>
+    <description>Interactive root shell via sudo (Sigma: sudo_root_shell)</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <!-- crontab_modified. Built-in parents: 2832 = crontab entry changed
+       (REPLACE), 2830 = crontab group (END EDIT, LIST). -->
+  <rule id="100150" level="7">
+    <if_sid>2832, 2830</if_sid>
+    <regex type="pcre2">\(\S+\) (REPLACE|END EDIT) \(\S+\)</regex>
+    <description>User crontab modified (Sigma: crontab_modified)</description>
+    <mitre>
+      <id>T1053.003</id>
+    </mitre>
+  </rule>
+
+  <!-- Web rules. The web-accesslog decoder's final built-in rule depends on
+       the request (seen in the CI discovery step on 4.9.2):
+       31100 = access log grouped, 31101 = 4xx, 31106 = web attack returned
+       200, 31108 = ignored simple query. Our rules hang off all four; a
+       request that ends on another built-in rule is not covered.
+       Patterns are anchored to the request line ("METHOD url) so the
+       user agent or referer can't trigger them. An ampersand is written
+       as \x26: Wazuh's XML reader does not decode the &amp; entity. -->
+  <rule id="100160" level="10">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\?[^ "]*(union(\s|\+|%20|/\*.*?\*/)+(all(\s|\+|%20)+)?select|(%27|')(\s|\+|%20)*(or|and)(\s|\+|%20)+(%27|')?\d+(%27|')?(\s|\+|%20)*(=|%3d)|sleep(\s|\+|%20)*(\(|%28)(\s|\+|%20)*\d|benchmark(\s|\+|%20)*(\(|%28)|information_schema)</regex>
+    <description>SQL injection attempt in query string (Sigma: sql_injection)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+  </rule>
+
+  <rule id="100161" level="7">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "]*(\.\./|\.\.%2f|%2e%2e/|%2e%2e%2f|\.\.\\|\.\.%5c|%252e%252e%252f|/etc/passwd|%2fetc%2fpasswd|win\.ini)</regex>
+    <description>Path traversal attempt (Sigma: path_traversal)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+  </rule>
+
+  <rule id="100162" level="7">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*/(\.env|\.git/config|\.git/HEAD|\.htpasswd|\.aws/credentials|wp-config\.php\.bak|wp-config\.php~|\.DS_Store|id_rsa|backup\.sql|db\.sql|dump\.sql)[ ?]</regex>
+    <description>Probe for sensitive files (Sigma: sensitive_file_probe)</description>
+    <mitre>
+      <id>T1595.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100163" level="10">
+    <if_sid>31100, 31101, 31106, 31108</if_sid>
+    <regex type="pcre2">(?i)"[A-Z]+ [^ "?]*\.(php|jspx?|aspx?)\?([^ "]*\x26)?(cmd|exec|command|c)=(\+|%20)*(whoami|id|uname|ls|dir|cat|type|wget|curl|nc|ncat|bash|sh|powershell|net(\+|%20)user)(\x26|\+|%20|%3b|;|%7c|\||[ "])</regex>
+    <description>Web shell command execution parameter (Sigma: webshell_command_param)</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+  </rule>
+
+</group>
