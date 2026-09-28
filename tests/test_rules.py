@@ -9,6 +9,7 @@ import yaml
 from sigma.correlations import SigmaCorrelationRule
 
 from detlab.engine import evaluate_correlation, rule_matches
+from detlab.parsers import parse_line
 from detlab.rules import RULES_DIR, rule_by_file, sample_file
 
 RULES = rule_by_file()
@@ -53,8 +54,9 @@ def _all_cases():
 def test_sample(rule_path, case):
     rule = RULES[rule_path]
     if _is_correlation(rule):
-        assert "events" in case, "correlation cases need a list of events"
-        alerts = evaluate_correlation(rule, case["events"])
+        assert ("events" in case) != ("raw" in case), "correlation cases need events or raw"
+        events = case.get("events") or [parse_line(line) for line in case["raw"]]
+        alerts = evaluate_correlation(rule, events)
         if case["expect"] == "alert":
             assert alerts, "expected an alert"
             if "groups" in case:
@@ -62,5 +64,6 @@ def test_sample(rule_path, case):
         else:
             assert not alerts, f"unexpected alert(s): {alerts}"
     else:
-        assert "event" in case, "rule cases need a single event"
-        assert rule_matches(rule, case["event"]) == (case["expect"] == "match")
+        assert ("event" in case) != ("raw" in case), "rule cases need an event or a raw line"
+        event = case.get("event") or parse_line(case["raw"])
+        assert rule_matches(rule, event) == (case["expect"] == "match")

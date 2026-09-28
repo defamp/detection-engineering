@@ -48,6 +48,8 @@ rules/                    Sigma rules, one per file
   web/                    web access logs
 tests/samples/            test cases, same path as the rule they test
 detlab/engine.py          evaluates parsed Sigma rules and correlations on events
+detlab/parsers.py         raw syslog / journalctl / access-log lines -> events
+detlab/scan.py            run all rules against a log file
 tests/                    sample, engine and metadata tests
 ```
 
@@ -84,6 +86,17 @@ The engine supports what these rules use: field/keyword matching, `re`,
 Anything else (for example `cidr`, or `temporal` correlations) raises
 `UnsupportedFeature` instead of silently not matching.
 
+## Scanning your own logs
+
+```bash
+journalctl -o short-iso _COMM=sshd _COMM=sudo --since today | python -m detlab.scan -
+python -m detlab.scan /var/log/apache2/access.log
+```
+
+It prints every alert (exit code 1 if anything fired). Supported input:
+`journalctl -o short-iso`, classic `/var/log/auth.log` syslog and
+Apache/Nginx combined access logs.
+
 ## Running locally
 
 ```bash
@@ -99,13 +112,15 @@ python -m detlab.coverage    # regenerate the coverage table
 1. Write `rules/<area>/<name>.yml` with ATT&CK technique and tactic tags,
    `falsepositives`, and a description explaining the logic and its blind spots.
 2. Add `tests/samples/<area>/<name>.yml` with at least one case that must fire
-   and one benign case that must not.
+   and one benign case that must not. A case is either a parsed `event` or a
+   `raw` log line (a list of lines for correlations).
 3. Run `pytest` and `python -m detlab.coverage`.
 
 ## Limits
 
-- Samples are synthetic, written to reflect real log formats; IPs come from
-  documentation ranges (RFC 5737).
+- Most samples are synthetic, written to reflect real log formats; IPs come
+  from documentation ranges (RFC 5737). Cases marked `real` come from an
+  actual Kali workstation, with hostname and username anonymised.
 - Passing tests shows a rule behaves as intended on these samples, not that
   it will be quiet in every environment: tune thresholds and filters against
   your own baseline before alerting on them.

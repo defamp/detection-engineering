@@ -14,3 +14,23 @@ cases:
   - description: running a script through bash
     expect: no_match
     event: {program: sudo, message: "   bob : TTY=pts/0 ; PWD=/home/bob ; USER=root ; COMMAND=/usr/bin/bash /opt/scripts/backup.sh"}
+
+  # Real journald lines from a Kali workstation (`journalctl -o short-iso`),
+  # hostname and username anonymised. The `sudo su` is the admin's own
+  # legitimate activity: a true detection of the behaviour, and a reminder
+  # that this rule needs per-team tuning.
+  - description: real - sudo su on a workstation
+    expect: match
+    raw: "2026-09-27T20:23:02+07:00 kali-host sudo[4964]:   analyst : TTY=pts/0 ; PWD=/home/analyst ; USER=root ; COMMAND=/usr/bin/su"
+  - description: real - package install
+    expect: no_match
+    raw: "2026-09-27T17:14:54+07:00 kali-host sudo[654250]:   analyst : TTY=pts/4 ; PWD=/home/analyst/cyber-recon ; USER=root ; COMMAND=/usr/bin/apt install -y nuclei"
+  - description: real - stopping a service
+    expect: no_match
+    raw: "2026-09-27T20:22:52+07:00 kali-host sudo[4809]:   analyst : TTY=pts/0 ; PWD=/home/analyst ; USER=root ; COMMAND=/usr/bin/systemctl stop zerotier-one"
+  - description: real - root dropping to a normal user to run a tool
+    expect: no_match
+    raw: "2026-09-28T08:36:50+07:00 kali-host sudo[26578]:     root : PWD=/home/analyst ; USER=analyst ; COMMAND=/usr/bin/env HOME=/home/analyst PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /usr/local/bin/gh auth status"
+  - description: real - PAM session line from the same sudo call
+    expect: no_match
+    raw: "2026-09-27T20:23:02+07:00 kali-host sudo[4964]: pam_unix(sudo:session): session opened for user root(uid=0) by analyst(uid=1000)"
