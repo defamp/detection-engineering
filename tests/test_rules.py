@@ -74,10 +74,14 @@ def test_wazuh_samples_are_raw_lines():
     for rule_path in sorted(RULES):
         data = yaml.safe_load(sample_file(rule_path).read_text()) or {}
         if "wazuh_rule" in data:
-            assert isinstance(data["wazuh_rule"], int), rule_path
+            rules = data["wazuh_rule"]
+            assert all(isinstance(r, int) for r in (rules if isinstance(rules, list) else [rules]))
             for case in data["cases"]:
                 assert "raw" in case, f"{rule_path}: {case.get('description')} has no raw line"
                 if "wazuh_skip" in case:
                     # a skip must say why, and must not hide a case that should fire
                     assert len(str(case["wazuh_skip"])) > 20, "explain the skip"
                     assert case["expect"] in ("no_match", "no_alert"), "only benign cases may skip"
+                if "wazuh_gap" in case:
+                    assert len(str(case["wazuh_gap"])) > 20, "explain the gap"
+                    assert case["expect"] in ("match", "alert"), "a gap is a missed detection"

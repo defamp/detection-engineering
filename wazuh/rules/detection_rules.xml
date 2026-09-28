@@ -23,13 +23,25 @@
 
   <!-- ssh_password_spraying: failures for different users from one source.
        Listed before brute force: sibling rules are tried in file order, and a
-       spray is also a burst of failures. Note: sshd puts existing users in
-       dstuser and non-existent ones in srcuser. -->
+       spray is also a burst of failures.
+       The built-in sshd decoder stores existing users in dstuser and
+       non-existent ones in srcuser, so one rule counts each; a spray that
+       mixes both kinds below 5 of either is a known gap (see README). -->
   <rule id="100112" level="10" frequency="5" timeframe="600">
     <if_matched_sid>100110</if_matched_sid>
     <same_srcip />
     <different_field>dstuser</different_field>
-    <description>SSH password spraying from a single source (Sigma: ssh_password_spraying)</description>
+    <description>SSH password spraying of existing accounts (Sigma: ssh_password_spraying)</description>
+    <mitre>
+      <id>T1110.003</id>
+    </mitre>
+  </rule>
+
+  <rule id="100113" level="10" frequency="5" timeframe="600">
+    <if_matched_sid>100110</if_matched_sid>
+    <same_srcip />
+    <different_field>srcuser</different_field>
+    <description>SSH password spraying of non-existent accounts (Sigma: ssh_password_spraying)</description>
     <mitre>
       <id>T1110.003</id>
     </mitre>

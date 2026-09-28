@@ -118,7 +118,8 @@ def main() -> int:
         data = yaml.safe_load(path.read_text()) or {}
         if "wazuh_rule" not in data:
             continue
-        expected = str(data["wazuh_rule"])
+        rules = data["wazuh_rule"]
+        expected = {str(r) for r in (rules if isinstance(rules, list) else [rules])}
         rel = path.relative_to(SAMPLES)
         for i, case in enumerate(data["cases"]):
             if case.get("wazuh_skip"):
@@ -131,17 +132,21 @@ def main() -> int:
             output = logtest(args.container, lines)
             per_line = fired_rules(output)
             fired = set().union(*per_line) if per_line else set()
-            want = case["expect"] in POSITIVE
-            ok = len(per_line) == len(lines) and (expected in fired) == want
-            status = "ok  " if ok else "FAIL"
+            # A documented gap is a positive case Wazuh is known to miss: assert it
+            # still misses, so the test flags it if the gap ever closes.
+            gap = case.get("wazuh_gap")
+            want = case["expect"] in POSITIVE and not gap
+            ok = len(per_line) == len(lines) and bool(expected & fired) == want
+            status = ("gap " if gap else "ok  ") if ok else "FAIL"
             label = f"{rel}::{i} {case['description']}"
-            print(f"{status} {label} (rule {expected}, fired {sorted(fired)})")
+            print(f"{status} {label} (rule {sorted(expected)}, fired {sorted(fired)})")
             if not ok:
                 failed += 1
                 why = (
                     f"logtest processed {len(per_line)} of {len(lines)} lines"
                     if len(per_line) != len(lines)
-                    else f"expected rule {expected} to {'fire' if want else 'NOT fire'}"
+                    else f"expected rule {sorted(expected)} to {'fire' if want else 'NOT fire'}"
+                    + (f" (documented gap: {gap})" if gap else "")
                 )
                 annotate(label, f"{why}\n\n{output}")
     print(f"\n{total - failed}/{total} passed, {skipped} skipped")
