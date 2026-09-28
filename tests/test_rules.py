@@ -77,3 +77,7 @@ def test_wazuh_samples_are_raw_lines():
             assert isinstance(data["wazuh_rule"], int), rule_path
             for case in data["cases"]:
                 assert "raw" in case, f"{rule_path}: {case.get('description')} has no raw line"
+                if "wazuh_skip" in case:
+                    # a skip must say why, and must not hide a case that should fire
+                    assert len(str(case["wazuh_skip"])) > 20, "explain the skip"
+                    assert case["expect"] in ("no_match", "no_alert"), "only benign cases may skip"

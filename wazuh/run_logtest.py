@@ -113,7 +113,7 @@ def main() -> int:
         discover(args.container)
         return 0
 
-    total = failed = 0
+    total = failed = skipped = 0
     for path in sorted(SAMPLES.rglob("*.yml")):
         data = yaml.safe_load(path.read_text()) or {}
         if "wazuh_rule" not in data:
@@ -121,6 +121,10 @@ def main() -> int:
         expected = str(data["wazuh_rule"])
         rel = path.relative_to(SAMPLES)
         for i, case in enumerate(data["cases"]):
+            if case.get("wazuh_skip"):
+                skipped += 1
+                print(f"skip {rel}::{i} {case['description']} ({case['wazuh_skip']})")
+                continue
             total += 1
             raw = case["raw"]
             lines = [raw] if isinstance(raw, str) else list(raw)
@@ -140,7 +144,7 @@ def main() -> int:
                     else f"expected rule {expected} to {'fire' if want else 'NOT fire'}"
                 )
                 annotate(label, f"{why}\n\n{output}")
-    print(f"\n{total - failed}/{total} passed")
+    print(f"\n{total - failed}/{total} passed, {skipped} skipped")
     if total == 0:
         print("no sample files with wazuh_rule found")
         return 1

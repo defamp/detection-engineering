@@ -21,17 +21,10 @@
     <group>authentication_failed,</group>
   </rule>
 
-  <!-- ssh_bruteforce: 5+ failures from one source. Correlates on 100110. -->
-  <rule id="100111" level="10" frequency="5" timeframe="60">
-    <if_matched_sid>100110</if_matched_sid>
-    <same_srcip />
-    <description>SSH brute force from a single source (Sigma: ssh_bruteforce)</description>
-    <mitre>
-      <id>T1110.001</id>
-    </mitre>
-  </rule>
-
-  <!-- ssh_password_spraying: failures for different users from one source. -->
+  <!-- ssh_password_spraying: failures for different users from one source.
+       Listed before brute force: sibling rules are tried in file order, and a
+       spray is also a burst of failures. Note: sshd puts existing users in
+       dstuser and non-existent ones in srcuser. -->
   <rule id="100112" level="10" frequency="5" timeframe="600">
     <if_matched_sid>100110</if_matched_sid>
     <same_srcip />
@@ -39,6 +32,16 @@
     <description>SSH password spraying from a single source (Sigma: ssh_password_spraying)</description>
     <mitre>
       <id>T1110.003</id>
+    </mitre>
+  </rule>
+
+  <!-- ssh_bruteforce: 5+ failures from one source. Correlates on 100110. -->
+  <rule id="100111" level="10" frequency="5" timeframe="60">
+    <if_matched_sid>100110</if_matched_sid>
+    <same_srcip />
+    <description>SSH brute force from a single source (Sigma: ssh_bruteforce)</description>
+    <mitre>
+      <id>T1110.001</id>
     </mitre>
   </rule>
 

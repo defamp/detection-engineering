@@ -12,6 +12,7 @@ cases:
       - 'Sep 28 10:00:20 web1 sshd[811]: Failed password for root from 203.0.113.7 port 50005 ssh2'
       - 'Sep 28 10:00:25 web1 sshd[811]: Failed password for root from 203.0.113.7 port 50006 ssh2'
   - description: 5 failures spread over 4 minutes (slow guessing stays under the threshold)
+    wazuh_skip: "wazuh correlates on analysis time; logtest processes every line at once, so time gaps can't be reproduced (covered by the Python engine)"
     expect: no_alert
     raw:
       - 'Sep 28 10:00:00 web1 sshd[811]: Failed password for root from 203.0.113.7 port 50001 ssh2'
