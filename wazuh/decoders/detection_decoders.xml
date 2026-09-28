@@ -1,6 +1,6 @@
 <!--
   Custom decoders. wazuh-logtest 4.9.2 has no decoder for usermod, so its
-  group changes never reach a rule (verified with run_logtest.py --discover).
+  group changes never reach a rule (verified in the CI discovery step).
 -->
 <decoder name="usermod">
   <program_name>^usermod$</program_name>
