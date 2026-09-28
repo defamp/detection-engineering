@@ -7,10 +7,12 @@
 -->
 <group name="detection_engineering,">
 
-  <!-- ssh_failed_password: built-in 5716 = authentication failed,
-       5710 = attempt with a non-existent user -->
+  <!-- ssh_failed_password. Built-in parents seen in wazuh-logtest 4.9.2:
+       5760 = "sshd: authentication failed" (existing user),
+       5710 = attempt to log in with a non-existent user.
+       5716 is kept for older rule sets that use it for the same message. -->
   <rule id="100110" level="5">
-    <if_sid>5716, 5710</if_sid>
+    <if_sid>5760, 5716, 5710</if_sid>
     <match>Failed password for </match>
     <description>SSH failed password (Sigma: ssh_failed_password)</description>
     <mitre>
@@ -19,7 +21,8 @@
     <group>authentication_failed,</group>
   </rule>
 
-  <!-- sudo_root_shell: built-in sudo rules fire first for any sudo command -->
+  <!-- sudo_root_shell. Built-in parents: 5403 = first time a user runs sudo
+       (fires in every fresh logtest session), 5402 = sudo to root. -->
   <rule id="100140" level="8">
     <if_sid>5402, 5403</if_sid>
     <regex type="pcre2">COMMAND=(/usr)?/bin/(ba|z|da|k|c|tc|fi)?sh( -[il]+)?$|COMMAND=(/usr)?/bin/su( -| -l)?( root)?$</regex>
