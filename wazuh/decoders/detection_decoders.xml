@@ -1,0 +1,14 @@
+<!--
+  Custom decoders. wazuh-logtest 4.9.2 has no decoder for usermod, so its
+  group changes never reach a rule (verified with run_logtest.py --discover).
+-->
+<decoder name="usermod">
+  <program_name>^usermod$</program_name>
+</decoder>
+
+<!-- add 'bob' to group 'sudo'  /  add 'bob' to shadow group 'sudo' -->
+<decoder name="usermod-add-to-group">
+  <parent>usermod</parent>
+  <regex>^add '(\S+)' to \.*group '(\S+)'$</regex>
+  <order>dstuser, group</order>
+</decoder>

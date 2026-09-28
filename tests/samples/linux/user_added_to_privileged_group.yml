@@ -1,4 +1,5 @@
 # Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100131
 cases:
   - description: usermod -aG sudo
     expect: match

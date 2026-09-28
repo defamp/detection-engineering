@@ -40,14 +40,17 @@ jobs:
       - name: Install the rules and restart
         run: |
           docker cp wazuh/rules/detection_rules.xml wazuh:/var/ossec/etc/rules/detection_rules.xml
-          docker exec wazuh chown root:wazuh /var/ossec/etc/rules/detection_rules.xml
-          docker exec wazuh chmod 660 /var/ossec/etc/rules/detection_rules.xml
+          docker cp wazuh/decoders/detection_decoders.xml wazuh:/var/ossec/etc/decoders/detection_decoders.xml
+          for f in rules/detection_rules.xml decoders/detection_decoders.xml; do
+            docker exec wazuh chown root:wazuh "/var/ossec/etc/$f"
+            docker exec wazuh chmod 660 "/var/ossec/etc/$f"
+          done
           docker exec wazuh /var/ossec/bin/wazuh-control restart
 
       - name: Fail on rule loading errors
         run: |
-          if docker exec wazuh grep -iE "error|critical" /var/ossec/logs/ossec.log | grep -i "rules"; then
-            echo "::error::Wazuh reported errors while loading rules"
+          if docker exec wazuh grep -iE "error|critical" /var/ossec/logs/ossec.log | grep -iE "rules|decoder"; then
+            echo "::error::Wazuh reported errors while loading rules or decoders"
             exit 1
           fi
 

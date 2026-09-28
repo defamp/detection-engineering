@@ -1,4 +1,5 @@
 # Synthetic lines in raw log format; IPs are from RFC 5737 documentation ranges.
+wazuh_rule: 100150
 cases:
   - description: crontab replaced (crontab file or crontab -e save)
     expect: match
