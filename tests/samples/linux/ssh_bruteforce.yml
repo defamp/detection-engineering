@@ -11,6 +11,16 @@ cases:
       - 'Sep 28 10:00:15 web1 sshd[811]: Failed password for root from 203.0.113.7 port 50004 ssh2'
       - 'Sep 28 10:00:20 web1 sshd[811]: Failed password for root from 203.0.113.7 port 50005 ssh2'
       - 'Sep 28 10:00:25 web1 sshd[811]: Failed password for root from 203.0.113.7 port 50006 ssh2'
+  - description: 6 failures from one IPv6 source in 25 seconds (IPv6 is grouped like IPv4)
+    expect: alert
+    groups: [["2001:db8::7"]]
+    raw:
+      - 'Sep 28 10:00:00 web1 sshd[811]: Failed password for root from 2001:db8::7 port 50010 ssh2'
+      - 'Sep 28 10:00:05 web1 sshd[811]: Failed password for root from 2001:db8::7 port 50011 ssh2'
+      - 'Sep 28 10:00:10 web1 sshd[811]: Failed password for root from 2001:db8::7 port 50012 ssh2'
+      - 'Sep 28 10:00:15 web1 sshd[811]: Failed password for root from 2001:db8::7 port 50013 ssh2'
+      - 'Sep 28 10:00:20 web1 sshd[811]: Failed password for root from 2001:db8::7 port 50014 ssh2'
+      - 'Sep 28 10:00:25 web1 sshd[811]: Failed password for root from 2001:db8::7 port 50015 ssh2'
   - description: 5 failures spread over 4 minutes (slow guessing stays under the threshold)
     wazuh_skip: "wazuh correlates on analysis time; logtest processes every line at once, so time gaps can't be reproduced (covered by the Python engine)"
     expect: no_alert
